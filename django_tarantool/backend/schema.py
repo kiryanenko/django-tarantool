@@ -4,15 +4,15 @@ from string import ascii_lowercase
 
 from django.apps.registry import Apps
 from django.db.backends.base.schema import BaseDatabaseSchemaEditor
-from django.db.backends.ddl_references import Statement
+# from django.db.backends.ddl_references import Statement
 from django.db.backends.utils import strip_quotes
-from django.db.models import UniqueConstraint
+# from django.db.models import UniqueConstraint
 
 
 class DatabaseSchemaEditor(BaseDatabaseSchemaEditor):
 
     sql_delete_table = "DROP TABLE %(table)s"
-    sql_create_fk = None
+    # sql_create_fk = None
     sql_create_inline_fk = "REFERENCES %(to_table)s (%(to_column)s) DEFERRABLE INITIALLY DEFERRED"
     sql_create_unique = "CREATE UNIQUE INDEX %(name)s ON %(table)s (%(columns)s)"
     sql_delete_unique = 'DROP INDEX %(name)s ON %(table)s'
@@ -136,7 +136,7 @@ class DatabaseSchemaEditor(BaseDatabaseSchemaEditor):
                 if delete_field.name not in index.fields
             ]
 
-        constraints = list(model._meta.constraints)
+        # constraints = list(model._meta.constraints)
 
         # Provide isolated instances of the fields to the new model body so
         # that the existing model's internals aren't interfered with when
@@ -154,7 +154,7 @@ class DatabaseSchemaEditor(BaseDatabaseSchemaEditor):
             'unique_together': unique_together,
             'index_together': index_together,
             'indexes': indexes,
-            'constraints': constraints,
+            # 'constraints': constraints,
             'apps': apps,
         }
         meta = type("Meta", (), meta_contents)
@@ -171,7 +171,7 @@ class DatabaseSchemaEditor(BaseDatabaseSchemaEditor):
             'unique_together': unique_together,
             'index_together': index_together,
             'indexes': indexes,
-            'constraints': constraints,
+            # 'constraints': constraints,
             'apps': apps,
         }
         meta = type("Meta", (), meta_contents)
@@ -213,14 +213,17 @@ class DatabaseSchemaEditor(BaseDatabaseSchemaEditor):
         if handle_autom2m:
             super().delete_model(model)
         else:
+            table = self.quote_name(model._meta.db_table)
             # Delete the table (and only that)
             self.execute(self.sql_delete_table % {
-                "table": self.quote_name(model._meta.db_table),
+                "table": table,
             })
             # Remove all deferred statements referencing the deleted table.
-            for sql in list(self.deferred_sql):
-                if isinstance(sql, Statement) and sql.references_table(model._meta.db_table):
-                    self.deferred_sql.remove(sql)
+            self.deferred_sql = [sql for sql in self.deferred_sql if sql.find(table) >= 0]
+            # for sql in list(self.deferred_sql):
+            #     self.deferred_sql.
+            #     if sql.find(self.quote_name(model._meta.db_table)):
+            #         self.deferred_sql.remove(sql)
 
     def add_field(self, model, field):
         """
@@ -304,17 +307,18 @@ class DatabaseSchemaEditor(BaseDatabaseSchemaEditor):
         # Delete the old through table
         self.delete_model(old_field.remote_field.through)
 
-    def add_constraint(self, model, constraint):
-        if isinstance(constraint, UniqueConstraint) and constraint.condition:
-            super().add_constraint(model, constraint)
-        else:
-            self._remake_table(model)
 
-    def remove_constraint(self, model, constraint):
-        if isinstance(constraint, UniqueConstraint) and constraint.condition:
-            super().remove_constraint(model, constraint)
-        else:
-            self._remake_table(model)
+    # def add_constraint(self, model, constraint):
+    #     if isinstance(constraint, UniqueConstraint) and constraint.condition:
+    #         super().add_constraint(model, constraint)
+    #     else:
+    #         self._remake_table(model)
+    #
+    # def remove_constraint(self, model, constraint):
+    #     if isinstance(constraint, UniqueConstraint) and constraint.condition:
+    #         super().remove_constraint(model, constraint)
+    #     else:
+    #         self._remake_table(model)
 
     def drop_referenced_fk(self, model):
         sql = """
