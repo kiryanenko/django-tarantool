@@ -1,3 +1,5 @@
+It is fork django-tarantool with fixes for Django 1.X
+
 # Django Tarantool database backend
 [![Build Status](https://travis-ci.com/artembo/django-tarantool.svg?branch=master)](https://travis-ci.com/artembo/django-tarantool)
 
